@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using LocalEventFinder.Models;
+using LocalEventFinder.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 namespace LocalEventFinder
 {
@@ -17,7 +18,13 @@ namespace LocalEventFinder
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddDbContext<EventDbContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(builder.Configuration.GetConnectionString("LocalEventFinderConnection")));
+
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            builder.Services.AddScoped<IVenueRepository, VenueRepository>();
+            builder.Services.AddScoped<IOrganizerRepository, OrganizerRepository>();
+            builder.Services.AddScoped<IEventRepository, EventRepository>();
+            builder.Services.AddScoped<IEventAttendeeRepository, EventAttendeeRepository>();
 
             var app = builder.Build();
 
