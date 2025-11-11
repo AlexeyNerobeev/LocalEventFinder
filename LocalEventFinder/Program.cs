@@ -18,7 +18,7 @@ namespace LocalEventFinder
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddDbContext<EventDbContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString("LocalEventFinderConnection")));
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped<IVenueRepository, VenueRepository>();
