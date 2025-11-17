@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Microsoft.IdentityModel.Tokens;
+using System.Text.Json;
 
 namespace LocalEventFinder
 {
@@ -45,17 +46,28 @@ namespace LocalEventFinder
         /// </summary>
         private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            var statusCode = exception switch
+            {
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                SecurityTokenException => StatusCodes.Status401Unauthorized,
+                _ => StatusCodes.Status500InternalServerError
+            };
+
+            context.Response.StatusCode = statusCode;
 
             var response = new
             {
                 success = false,
                 error = new
                 {
-                    message = "Внутренняя ошибка сервера",
+                    message = statusCode switch
+                    {
+                        StatusCodes.Status401Unauthorized => "Неавторизованный доступ",
+                        StatusCodes.Status403Forbidden => "Доступ запрещен",
+                        _ => "Внутренняя ошибка сервера"
+                    },
                     type = exception.GetType().Name,
-                    details = _env.IsDevelopment() ? exception.Message : "Обратитесь в службу поддержки",
+                    details = _env.IsDevelopment() ? exception.Message : GetUserFriendlyMessage(exception),
                     stackTrace = _env.IsDevelopment() ? exception.StackTrace : null
                 },
                 timestamp = DateTime.UtcNow
@@ -69,6 +81,16 @@ namespace LocalEventFinder
 
             var json = JsonSerializer.Serialize(response, jsonOptions);
             return context.Response.WriteAsync(json);
+        }
+
+        private string GetUserFriendlyMessage(Exception exception)
+        {
+            return exception switch
+            {
+                UnauthorizedAccessException => "Неверные учетные данные или истекший токен",
+                SecurityTokenException => "Недействительный токен",
+                _ => "Обратитесь в службу поддержки"
+            };
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using LocalEventFinder.Models.DTO;
 using LocalEventFinder.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,6 +23,7 @@ namespace LocalEventFinder.Controllers
         /// Получить все мероприятия
         /// </summary>
         [HttpGet]
+        [Authorize(Roles = "Admin,Organizer,User")]
         public async Task<ActionResult<IEnumerable<EventDto>>> GetEvents()
         {
             try
@@ -40,6 +42,7 @@ namespace LocalEventFinder.Controllers
         /// Получить мероприятие по ID
         /// </summary>
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Organizer,User")]
         public async Task<ActionResult<EventDto>> GetEvent(int id)
         {
             try
@@ -69,6 +72,7 @@ namespace LocalEventFinder.Controllers
         /// Создать новое мероприятие
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "Admin,Organizer")]
         public async Task<ActionResult<EventDto>> CreateEvent(CreateEventDto createEventDto)
         {
             try
@@ -96,6 +100,7 @@ namespace LocalEventFinder.Controllers
         /// Обновить мероприятие
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Organizer")]
         public async Task<ActionResult<EventDto>> UpdateEvent(int id, CreateEventDto updateEventDto)
         {
             try
@@ -134,6 +139,7 @@ namespace LocalEventFinder.Controllers
         /// Удалить мероприятие
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteEvent(int id)
         {
             try
@@ -163,6 +169,7 @@ namespace LocalEventFinder.Controllers
         /// Получить предстоящие мероприятия
         /// </summary>
         [HttpGet("upcoming")]
+        [Authorize(Roles = "Admin,Organizer,User")]
         public async Task<ActionResult<IEnumerable<EventDto>>> GetUpcomingEvents([FromQuery] int days = 30)
         {
             try
@@ -181,6 +188,7 @@ namespace LocalEventFinder.Controllers
         /// Получить мероприятия по категории
         /// </summary>
         [HttpGet("category/{category}")]
+        [Authorize(Roles = "Admin,Organizer,User")]
         public async Task<ActionResult<IEnumerable<EventDto>>> GetEventsByCategory(string category)
         {
             try
