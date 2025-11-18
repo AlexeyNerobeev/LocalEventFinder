@@ -33,8 +33,6 @@ namespace LocalEventFinder.Mapping
 
             CreateMap<CreateEventDto, Event>();
 
-            CreateMap<EventAttendee, EventAttendeeDto>()
-                .ForMember(dest => dest.EventTitle, opt => opt.MapFrom(src => src.Event.Title));
             CreateMap<RegisterForEventDto, EventAttendee>()
                 .ForMember(dest => dest.RegistrationDate, opt => opt.MapFrom(_ => DateTime.UtcNow));
         }

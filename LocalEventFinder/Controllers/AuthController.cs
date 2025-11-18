@@ -26,7 +26,6 @@ namespace LocalEventFinder.Controllers
         {
             try
             {
-                // Валидация входных данных
                 if (string.IsNullOrWhiteSpace(registerDto.Username) ||
                     string.IsNullOrWhiteSpace(registerDto.Email) ||
                     string.IsNullOrWhiteSpace(registerDto.Password))

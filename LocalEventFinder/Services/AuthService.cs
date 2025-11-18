@@ -27,21 +27,18 @@ namespace LocalEventFinder.Services
         /// </summary>
         public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto registerDto)
         {
-            // Проверяем, существует ли пользователь с таким email
             var existingUsersByEmail = await _userRepository.FindAsync(u => u.Email == registerDto.Email);
             if (existingUsersByEmail.Any())
             {
                 throw new ArgumentException("Пользователь с таким email уже существует");
             }
 
-            // Проверяем, существует ли пользователь с таким username
             var existingUsersByUsername = await _userRepository.FindAsync(u => u.Username == registerDto.Username);
             if (existingUsersByUsername.Any())
             {
                 throw new ArgumentException("Пользователь с таким именем уже существует");
             }
 
-            // Создаем нового пользователя
             var user = new User
             {
                 Username = registerDto.Username.Trim(),
@@ -54,7 +51,6 @@ namespace LocalEventFinder.Services
             var createdUser = await _userRepository.AddAsync(user);
             _logger.LogInformation("Зарегистрирован новый пользователь: {Email}", createdUser.Email);
 
-            // Генерируем JWT токен
             var token = GenerateJwtToken(createdUser);
 
             return new AuthResponseDto
@@ -74,7 +70,6 @@ namespace LocalEventFinder.Services
         /// </summary>
         public async Task<AuthResponseDto> LoginAsync(LoginRequestDto loginDto)
         {
-            // Ищем пользователя по email
             var users = await _userRepository.FindAsync(u => u.Email == loginDto.Email.Trim().ToLower());
             var user = users.FirstOrDefault();
 
@@ -83,7 +78,6 @@ namespace LocalEventFinder.Services
                 throw new UnauthorizedAccessException("Неверный email или пароль");
             }
 
-            // Генерируем JWT токен
             var token = GenerateJwtToken(user);
 
             _logger.LogInformation("Пользователь вошел в систему: {Email}", user.Email);

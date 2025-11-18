@@ -23,7 +23,7 @@ namespace LocalEventFinder.Controllers
         /// Получить все мероприятия
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "Admin,Organizer,User")]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<EventDto>>> GetEvents()
         {
             try

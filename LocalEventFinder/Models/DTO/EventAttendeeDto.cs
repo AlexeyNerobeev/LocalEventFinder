@@ -10,6 +10,5 @@
         public string Email { get; set; } = string.Empty;
         public DateTime RegistrationDate { get; set; }
         public int EventId { get; set; }
-        public string EventTitle { get; set; } = string.Empty;
     }
 }
