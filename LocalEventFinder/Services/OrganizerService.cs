@@ -20,7 +20,8 @@ namespace LocalEventFinder.Services
                 Id = organizer.Id,
                 Name = organizer.Name,
                 ContactPhone = organizer.ContactPhone,
-                Email = organizer.Email
+                Email = organizer.Email,
+                EventsCount = organizer.Events?.Count ?? 0 
             };
         }
 
@@ -53,7 +54,7 @@ namespace LocalEventFinder.Services
         /// </summary>
         public async Task<IEnumerable<OrganizerDto>> GetAllOrganizersAsync()
         {
-            var organizers = await _organizerRepo.GetAllAsync();
+            var organizers = await _organizerRepo.GetAllWithEventsAsync();
             return organizers.Select(MapOrganizerDTO);
         }
 
@@ -88,7 +89,18 @@ namespace LocalEventFinder.Services
             organizer.Email = updateOrganizerDTO.Email;
 
             var updatedOrganizer = await _organizerRepo.UpdateAsync(organizer);
-            return MapOrganizerDTO(updatedOrganizer);
+
+            var organizerWithEvents = await _organizerRepo.GetByIdAsync(id);
+            return organizerWithEvents == null ? null : MapOrganizerDTO(organizerWithEvents);
+        }
+
+        /// <summary>
+        /// Получить организаторов с событиями
+        /// </summary>
+        public async Task<IEnumerable<OrganizerDto>> GetOrganizersWithEventsAsync()
+        {
+            var organizers = await _organizerRepo.GetOrganizersWithEventsAsync();
+            return organizers.Select(MapOrganizerDTO);
         }
     }
 }

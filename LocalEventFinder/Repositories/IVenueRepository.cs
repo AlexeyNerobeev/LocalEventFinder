@@ -7,5 +7,6 @@ namespace LocalEventFinder.Repositories
         Task<IEnumerable<Venue>> GetVenuesByCapacityAsync(int minCapacity, int maxCapacity);
         Task<IEnumerable<Venue>> GetVenuesWithEventsAsync();
         Task<Venue?> GetVenueWithEventsAsync(int id);
+        Task<IEnumerable<Venue>> GetAllWithEventsAsync();
     }
 }

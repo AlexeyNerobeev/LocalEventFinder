@@ -1,5 +1,6 @@
 ﻿using LocalEventFinder.Models.DTO;
 using LocalEventFinder.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,28 +20,39 @@ namespace LocalEventFinder.Controllers
         }
 
         /// <summary>
-        /// Получить всех участников
+        /// Получить всех участников (только администраторы)
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<EventAttendeeDto>>> GetAttendees()
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<ActionResult> GetAttendees()
         {
             try
             {
                 var attendees = await _attendeeService.GetAllAttendeesAsync();
-                return Ok(attendees);
+                return Ok(new
+                {
+                    success = true,
+                    data = attendees,
+                    count = attendees.Count()
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении списка участников");
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при получении участников" }
+                });
             }
         }
 
         /// <summary>
-        /// Получить участника по ID
+        /// Получить участника по ID (только администраторы)
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<EventAttendeeDto>> GetAttendee(int id)
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<ActionResult> GetAttendee(int id)
         {
             try
             {
@@ -49,111 +61,126 @@ namespace LocalEventFinder.Controllers
                 {
                     return NotFound(new
                     {
-                        title = "Not Found",
-                        status = 404,
-                        detail = $"Участник с ID {id} не найден.",
-                        instance = $"/api/eventattendees/{id}"
+                        success = false,
+                        error = new { message = $"Участник с ID {id} не найден." }
                     });
                 }
 
-                return Ok(attendeeDto);
+                return Ok(new
+                {
+                    success = true,
+                    data = attendeeDto
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении участника с ID {AttendeeId}", id);
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при получении участника" }
+                });
             }
         }
 
         /// <summary>
-        /// Зарегистрировать участника на мероприятие
+        /// Зарегистрировать участника на мероприятие (любой аутентифицированный пользователь)
         /// </summary>
         [HttpPost("events/{eventId}/register")]
-        public async Task<ActionResult<EventAttendeeDto>> RegisterForEvent(int eventId, RegisterForEventDto registerDto)
+        [Authorize(Policy = "AnyRole")]
+        public async Task<ActionResult> RegisterForEvent(int eventId, [FromBody] RegisterForEventDto registerDto)
         {
             try
             {
                 var attendeeDto = await _attendeeService.RegisterForEventAsync(eventId, registerDto);
-                return CreatedAtAction(nameof(GetAttendee), new { id = attendeeDto.Id }, attendeeDto);
+                return Ok(new
+                {
+                    success = true,
+                    data = attendeeDto,
+                    message = "Регистрация на мероприятие прошла успешно"
+                });
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(new
                 {
-                    title = "Bad Request",
-                    status = 400,
-                    detail = ex.Message
+                    success = false,
+                    error = new { message = ex.Message }
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при регистрации участника на мероприятие {EventId}", eventId);
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при регистрации на мероприятие" }
+                });
             }
         }
 
         /// <summary>
-        /// Отменить регистрацию участника
+        /// Отменить регистрацию участника (только администраторы или сам пользователь)
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> CancelRegistration(int id)
+        [Authorize(Policy = "AnyRole")]
+        public async Task<ActionResult> CancelRegistration(int id)
         {
             try
             {
+                // TODO: Добавить проверку, что пользователь отменяет свою регистрацию или является админом
                 var result = await _attendeeService.CancelRegistrationAsync(id);
                 if (!result)
                 {
                     return NotFound(new
                     {
-                        title = "Not Found",
-                        status = 404,
-                        detail = $"Участник с ID {id} не найден.",
-                        instance = $"/api/eventattendees/{id}"
+                        success = false,
+                        error = new { message = $"Регистрация с ID {id} не найдена." }
                     });
                 }
 
-                return NoContent();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Регистрация успешно отменена"
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при отмене регистрации участника с ID {AttendeeId}", id);
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при отмене регистрации" }
+                });
             }
         }
 
         /// <summary>
-        /// Получить участников по мероприятию
+        /// Получить участников по мероприятию (только организаторы и администраторы)
         /// </summary>
         [HttpGet("events/{eventId}")]
-        public async Task<ActionResult<IEnumerable<EventAttendeeDto>>> GetAttendeesByEvent(int eventId)
+        [Authorize(Policy = "OrganizerOnly")]
+        public async Task<ActionResult> GetAttendeesByEvent(int eventId)
         {
             try
             {
                 var attendees = await _attendeeService.GetAttendeesByEventAsync(eventId);
-                return Ok(attendees);
+                return Ok(new
+                {
+                    success = true,
+                    data = attendees,
+                    count = attendees.Count()
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении участников мероприятия {EventId}", eventId);
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Получить участников по email
-        /// </summary>
-        [HttpGet("email/{email}")]
-        public async Task<ActionResult<IEnumerable<EventAttendeeDto>>> GetAttendeesByEmail(string email)
-        {
-            try
-            {
-                var attendees = await _attendeeService.GetAttendeesByEmailAsync(email);
-                return Ok(attendees);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении участников по email {Email}", email);
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при получении участников мероприятия" }
+                });
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using LocalEventFinder.Models.DTO;
 using LocalEventFinder.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,17 +23,27 @@ namespace LocalEventFinder.Controllers
         /// Получить все места проведения
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<VenueDto>>> GetVenues()
+        [AllowAnonymous]
+        public async Task<ActionResult> GetVenues()
         {
             try
             {
                 var venues = await _venueService.GetAllVenuesAsync();
-                return Ok(venues);
+                return Ok(new
+                {
+                    success = true,
+                    data = venues,
+                    count = venues.Count()
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении списка мест проведения");
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при получении мест проведения" }
+                });
             }
         }
 
@@ -40,7 +51,8 @@ namespace LocalEventFinder.Controllers
         /// Получить место проведения по ID
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<VenueDto>> GetVenue(int id)
+        [AllowAnonymous]
+        public async Task<ActionResult> GetVenue(int id)
         {
             try
             {
@@ -49,45 +61,146 @@ namespace LocalEventFinder.Controllers
                 {
                     return NotFound(new
                     {
-                        title = "Not Found",
-                        status = 404,
-                        detail = $"Место проведения с ID {id} не найдено.",
-                        instance = $"/api/venues/{id}"
+                        success = false,
+                        error = new { message = $"Место проведения с ID {id} не найдено." }
                     });
                 }
 
-                return Ok(venueDto);
+                return Ok(new
+                {
+                    success = true,
+                    data = venueDto
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении места проведения с ID {VenueId}", id);
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при получении места проведения" }
+                });
             }
         }
 
         /// <summary>
-        /// Создать новое место проведения
+        /// Получить места проведения с событиями
+        /// </summary>
+        [HttpGet("with-events")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetVenuesWithEvents()
+        {
+            try
+            {
+                var venues = await _venueService.GetVenuesWithEventsAsync();
+                return Ok(new
+                {
+                    success = true,
+                    data = venues,
+                    count = venues.Count()
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении мест проведения с событиями");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при получении мест проведения с событиями" }
+                });
+            }
+        }
+
+        /// <summary>
+        /// Получить статистику по местам проведения
+        /// </summary>
+        [HttpGet("stats")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetVenuesStats()
+        {
+            try
+            {
+                var stats = await _venueService.GetVenuesStatsAsync();
+                return Ok(new
+                {
+                    success = true,
+                    data = stats
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении статистики мест проведения");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при получении статистики" }
+                });
+            }
+        }
+
+        /// <summary>
+        /// Получить места проведения по вместимости
+        /// </summary>
+        [HttpGet("capacity")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetVenuesByCapacity(
+            [FromQuery] int minCapacity, [FromQuery] int maxCapacity)
+        {
+            try
+            {
+                var venues = await _venueService.GetVenuesByCapacityAsync(minCapacity, maxCapacity);
+                return Ok(new
+                {
+                    success = true,
+                    data = venues,
+                    count = venues.Count()
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении мест проведения по вместимости");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при получении мест проведения по вместимости" }
+                });
+            }
+        }
+
+        /// <summary>
+        /// Создать новое место проведения (только администраторы)
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<VenueDto>> CreateVenue(CreateVenueDto createVenueDto)
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<ActionResult> CreateVenue([FromBody] CreateVenueDto createVenueDto)
         {
             try
             {
                 var venueDto = await _venueService.CreateAsync(createVenueDto);
-                return CreatedAtAction(nameof(GetVenue), new { id = venueDto.Id }, venueDto);
+                return Ok(new
+                {
+                    success = true,
+                    data = venueDto,
+                    message = "Место проведения успешно создано"
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при создании места проведения");
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при создании места проведения" }
+                });
             }
         }
 
         /// <summary>
-        /// Обновить место проведения
+        /// Обновить место проведения (только администраторы)
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult<VenueDto>> UpdateVenue(int id, CreateVenueDto updateVenueDto)
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<ActionResult> UpdateVenue(int id, [FromBody] CreateVenueDto updateVenueDto)
         {
             try
             {
@@ -96,27 +209,35 @@ namespace LocalEventFinder.Controllers
                 {
                     return NotFound(new
                     {
-                        title = "Not Found",
-                        status = 404,
-                        detail = $"Место проведения с ID {id} не найдено.",
-                        instance = $"/api/venues/{id}"
+                        success = false,
+                        error = new { message = $"Место проведения с ID {id} не найдено." }
                     });
                 }
 
-                return Ok(venueDto);
+                return Ok(new
+                {
+                    success = true,
+                    data = venueDto,
+                    message = "Место проведения успешно обновлено"
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при обновлении места проведения с ID {VenueId}", id);
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при обновлении места проведения" }
+                });
             }
         }
 
         /// <summary>
-        /// Удалить место проведения
+        /// Удалить место проведения (только администраторы)
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteVenue(int id)
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<ActionResult> DeleteVenue(int id)
         {
             try
             {
@@ -125,38 +246,25 @@ namespace LocalEventFinder.Controllers
                 {
                     return NotFound(new
                     {
-                        title = "Not Found",
-                        status = 404,
-                        detail = $"Место проведения с ID {id} не найдено.",
-                        instance = $"/api/venues/{id}"
+                        success = false,
+                        error = new { message = $"Место проведения с ID {id} не найдено." }
                     });
                 }
 
-                return NoContent();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Место проведения успешно удалено"
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при удалении места проведения с ID {VenueId}", id);
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Получить места проведения по вместимости
-        /// </summary>
-        [HttpGet("capacity")]
-        public async Task<ActionResult<IEnumerable<VenueDto>>> GetVenuesByCapacity(
-            [FromQuery] int minCapacity, [FromQuery] int maxCapacity)
-        {
-            try
-            {
-                var venues = await _venueService.GetVenuesByCapacityAsync(minCapacity, maxCapacity);
-                return Ok(venues);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении мест проведения по вместимости");
-                throw;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = new { message = "Ошибка при удалении места проведения" }
+                });
             }
         }
     }

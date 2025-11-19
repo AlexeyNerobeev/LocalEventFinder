@@ -7,5 +7,6 @@ namespace LocalEventFinder.Repositories
         Task<IEnumerable<Organizer>> GetOrganizersByEmailAsync(string emailDomain);
         Task<IEnumerable<Organizer>> GetOrganizersWithEventsAsync();
         Task<Organizer?> GetOrganizerWithEventsAsync(int id);
+        Task<IEnumerable<Organizer>> GetAllWithEventsAsync(); 
     }
 }

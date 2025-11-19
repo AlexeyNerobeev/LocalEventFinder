@@ -53,6 +53,11 @@ namespace LocalEventFinder
                 _ => StatusCodes.Status500InternalServerError
             };
 
+            if (context.Response.StatusCode == StatusCodes.Status403Forbidden)
+            {
+                statusCode = StatusCodes.Status403Forbidden;
+            }
+
             context.Response.StatusCode = statusCode;
 
             var response = new
@@ -63,12 +68,12 @@ namespace LocalEventFinder
                     message = statusCode switch
                     {
                         StatusCodes.Status401Unauthorized => "Неавторизованный доступ",
-                        StatusCodes.Status403Forbidden => "Доступ запрещен",
+                        StatusCodes.Status403Forbidden => "Доступ запрещен. Недостаточно прав",
                         _ => "Внутренняя ошибка сервера"
                     },
                     type = exception.GetType().Name,
-                    details = _env.IsDevelopment() ? exception.Message : GetUserFriendlyMessage(exception),
-                    stackTrace = _env.IsDevelopment() ? exception.StackTrace : null
+                    details = _env.IsDevelopment() ? exception.Message : GetUserFriendlyMessage(statusCode),
+                    status = statusCode
                 },
                 timestamp = DateTime.UtcNow
             };
@@ -83,12 +88,12 @@ namespace LocalEventFinder
             return context.Response.WriteAsync(json);
         }
 
-        private string GetUserFriendlyMessage(Exception exception)
+        private string GetUserFriendlyMessage(int statusCode)
         {
-            return exception switch
+            return statusCode switch
             {
-                UnauthorizedAccessException => "Неверные учетные данные или истекший токен",
-                SecurityTokenException => "Недействительный токен",
+                StatusCodes.Status401Unauthorized => "Требуется авторизация",
+                StatusCodes.Status403Forbidden => "Недостаточно прав для доступа к ресурсу",
                 _ => "Обратитесь в службу поддержки"
             };
         }

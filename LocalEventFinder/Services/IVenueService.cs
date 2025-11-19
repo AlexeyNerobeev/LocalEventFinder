@@ -36,5 +36,15 @@ namespace LocalEventFinder.Services
         /// Получить места проведения по вместимости
         /// </summary>
         Task<IEnumerable<VenueDto>> GetVenuesByCapacityAsync(int minCapacity, int maxCapacity);
+
+        /// <summary>
+        /// Получить места проведения с событиями
+        /// </summary>
+        Task<IEnumerable<VenueDto>> GetVenuesWithEventsAsync();
+
+        /// <summary>
+        /// Получить статистику по местам проведения
+        /// </summary>
+        Task<object> GetVenuesStatsAsync();
     }
 }

@@ -28,5 +28,26 @@ namespace LocalEventFinder.Repositories
                 .Include(o => o.Events)
                 .FirstOrDefaultAsync(o => o.Id == id);
         }
+
+        public async Task<IEnumerable<Organizer>> GetAllWithEventsAsync()
+        {
+            return await _dbSet
+                .Include(o => o.Events)
+                .ToListAsync();
+        }
+
+        public override async Task<IEnumerable<Organizer>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(o => o.Events)
+                .ToListAsync();
+        }
+
+        public override async Task<Organizer?> GetByIdAsync(int id)
+        {
+            return await _dbSet
+                .Include(o => o.Events)
+                .FirstOrDefaultAsync(o => o.Id == id);
+        }
     }
 }

@@ -20,7 +20,8 @@ namespace LocalEventFinder.Services
                 Id = venue.Id,
                 Name = venue.Name,
                 Address = venue.Address,
-                Capacity = venue.Capacity
+                Capacity = venue.Capacity,
+                EventsCount = venue.Events?.Count ?? 0
             };
         }
 
@@ -53,7 +54,7 @@ namespace LocalEventFinder.Services
         /// </summary>
         public async Task<IEnumerable<VenueDto>> GetAllVenuesAsync()
         {
-            var venues = await _venueRepo.GetAllAsync();
+            var venues = await _venueRepo.GetAllWithEventsAsync();
             return venues.Select(MapVenueDTO);
         }
 
@@ -88,7 +89,37 @@ namespace LocalEventFinder.Services
             venue.Capacity = updateVenueDTO.Capacity;
 
             var updatedVenue = await _venueRepo.UpdateAsync(venue);
-            return MapVenueDTO(updatedVenue);
+
+            var venueWithEvents = await _venueRepo.GetByIdAsync(id);
+            return venueWithEvents == null ? null : MapVenueDTO(venueWithEvents);
+        }
+
+        /// <summary>
+        /// Получить места проведения с событиями
+        /// </summary>
+        public async Task<IEnumerable<VenueDto>> GetVenuesWithEventsAsync()
+        {
+            var venues = await _venueRepo.GetVenuesWithEventsAsync();
+            return venues.Select(MapVenueDTO);
+        }
+
+        /// <summary>
+        /// Получить статистику по местам проведения
+        /// </summary>
+        public async Task<object> GetVenuesStatsAsync()
+        {
+            var venues = await _venueRepo.GetAllWithEventsAsync();
+
+            var stats = new
+            {
+                TotalVenues = venues.Count(),
+                VenuesWithEvents = venues.Count(v => v.Events?.Any() == true),
+                AverageCapacity = venues.Any() ? venues.Average(v => v.Capacity) : 0,
+                MaxCapacity = venues.Any() ? venues.Max(v => v.Capacity) : 0,
+                MinCapacity = venues.Any() ? venues.Min(v => v.Capacity) : 0
+            };
+
+            return stats;
         }
     }
 }

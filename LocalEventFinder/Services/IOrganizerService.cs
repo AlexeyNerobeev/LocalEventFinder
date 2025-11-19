@@ -36,5 +36,10 @@ namespace LocalEventFinder.Services
         /// Получить организаторов по домену email
         /// </summary>
         Task<IEnumerable<OrganizerDto>> GetOrganizersByEmailDomainAsync(string emailDomain);
+
+        /// <summary>
+        /// Получить организаторов с событиями
+        /// </summary>
+        Task<IEnumerable<OrganizerDto>> GetOrganizersWithEventsAsync();
     }
 }

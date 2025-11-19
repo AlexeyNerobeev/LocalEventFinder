@@ -11,6 +11,7 @@ namespace LocalEventFinder.Repositories
         {
             return await _dbSet
                 .Where(v => v.Capacity >= minCapacity && v.Capacity <= maxCapacity)
+                .Include(v => v.Events) 
                 .OrderBy(v => v.Capacity)
                 .ToListAsync();
         }
@@ -24,6 +25,27 @@ namespace LocalEventFinder.Repositories
         }
 
         public async Task<Venue?> GetVenueWithEventsAsync(int id)
+        {
+            return await _dbSet
+                .Include(v => v.Events)
+                .FirstOrDefaultAsync(v => v.Id == id);
+        }
+
+        public async Task<IEnumerable<Venue>> GetAllWithEventsAsync()
+        {
+            return await _dbSet
+                .Include(v => v.Events)
+                .ToListAsync();
+        }
+
+        public override async Task<IEnumerable<Venue>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(v => v.Events)
+                .ToListAsync();
+        }
+
+        public override async Task<Venue?> GetByIdAsync(int id)
         {
             return await _dbSet
                 .Include(v => v.Events)
